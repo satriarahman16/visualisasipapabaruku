@@ -24,31 +24,30 @@ data["features"] = [
 df_nama_kota = [x["properties"]["NAME_2"] for x in data["features"]]
 df = pd.DataFrame(df_nama_kota, columns=['Kota'])
 
-# Tambahkan populasi random per tahun
-np.random.seed(42)  # supaya hasilnya konsisten setiap run
-df['2023'] = np.random.randint(50000, 500000, size=len(df))
-df['2024'] = np.random.randint(50000, 500000, size=len(df))
-df['2025'] = np.random.randint(50000, 500000, size=len(df))
+# Tambahkan populasi random per tahun (2021 - 2025)
+np.random.seed(42)
+for tahun in range(2021, 2026):
+    df[str(tahun)] = np.random.randint(50000, 500000, size=len(df))
 
-st.title("Visualisasi Kota di Papua, Papua Barat, dan Maluku")
-
-# --- Pilihan interaktif tahun ---
-tahun = st.radio(
-    "Pilih Tahun Populasi:",
-    options=['2023', '2024', '2025'],
-    horizontal=True
+# Ubah ke format long untuk animasi
+df_long = df.melt(
+    id_vars=["Kota"], 
+    value_vars=[str(t) for t in range(2021, 2026)],
+    var_name="Tahun", 
+    value_name="Populasi"
 )
 
-# --- Plot choropleth sesuai tahun yang dipilih ---
+# --- Plot choropleth dengan animasi ---
 fig = px.choropleth(
-    df,
+    df_long,
     geojson=data,
-    color=tahun,
+    color="Populasi",
     locations="Kota",
     featureidkey="properties.NAME_2",
     projection="stereographic",
-    color_continuous_scale="Blues",  # bisa ganti colormap
-    labels={tahun: f"Populasi {tahun}"}
+    animation_frame="Tahun",
+    color_continuous_scale="Blues",
+    labels={"Populasi": "Jumlah Populasi"}
 )
 
 fig.update_geos(
@@ -57,15 +56,20 @@ fig.update_geos(
     bgcolor="rgba(0,0,0,0)"
 )
 
+# Geser posisi slider & play button ke atas peta
+for step in fig.layout.sliders:
+    step.update(y=1.05)  # geser slider ke atas
+for btn in fig.layout.updatemenus:
+    btn.update(y=1.15)   # geser tombol play ke atas
+
 fig.update_layout(
     width=1000,
     height=700,
     margin={"r":0,"t":0,"l":0,"b":0},
     paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    transition = {"duration": 1000, "easing": "cubic-in-out"} 
+    plot_bgcolor="rgba(0,0,0,0)"
 )
 
 # --- Tampilkan di Streamlit ---
-
+st.header("Visualisasi Populasi pada Kota/Kabupaten di Provinsi Papua, Papua Barat, dan Maluku (2021–2025)")
 st.plotly_chart(fig, use_container_width=True)
